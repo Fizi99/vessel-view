@@ -1,0 +1,11 @@
+services:
+  vessel-view:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vessel-view-dev
+    container_name: vessel-view-dev
+    volumes:
+      - ./:/usr/src
+    ports:
+      - 8080:8080

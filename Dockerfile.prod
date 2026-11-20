@@ -1,0 +1,27 @@
+# Stage 1: build
+FROM golang:1.27 AS builder
+
+WORKDIR /src
+
+# pre-copy/cache go.mod for pre-downloading dependencies and only redownloading them in subsequent builds if they change
+COPY ./app/go.mod ./app/go.sum ./
+RUN go mod download
+
+COPY ./app/ .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o server .
+
+# Stage 2: production
+FROM alpine:3.22
+
+WORKDIR /app
+
+COPY --from=builder /src/server .
+COPY --from=builder /src/static/ ./static
+
+RUN adduser -D appuser
+USER appuser
+
+EXPOSE 8080
+
+CMD ["./server"]

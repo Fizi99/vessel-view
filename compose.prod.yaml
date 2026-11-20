@@ -1,0 +1,8 @@
+services:
+  vessel-view:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: vessel-view-prod
+    ports:
+      - 8080:8080
