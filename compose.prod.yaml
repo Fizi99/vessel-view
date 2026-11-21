@@ -1,16 +1,19 @@
 services:
   vessel-view:
     build:
+      target: production
       context: .
       dockerfile: Dockerfile.prod
     container_name: vessel-view-prod
     ports:
       - 8080:8080
     environment:
-      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db-prod:5432/${DB_NAME}?sslmode=disable
+      DATABASE_URL: ${DB_URL}
     depends_on:
       db-prod:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
   db-prod:
     image: postgres:19
     restart: always
@@ -25,6 +28,19 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  migrate:
+    build:
+      target: migrate
+      context: .
+      dockerfile: Dockerfile.prod
+    command: ["goose", "up"]
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: ${DB_URL}
+      GOOSE_MIGRATION_DIR: /migrations
+    depends_on:
+      db-prod:
+        condition: service_healthy
   pgadmin4:
     image: dpage/pgadmin4
     restart: always
@@ -33,5 +49,8 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 volumes:
   prod_db_data:

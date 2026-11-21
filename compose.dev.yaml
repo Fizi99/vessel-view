@@ -9,10 +9,15 @@ services:
     ports:
       - 8080:8080
     environment:
-      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db-dev:5432/${DB_NAME}?sslmode=disable
+      DATABASE_URL: ${DB_URL}
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: ${DB_URL}
+      GOOSE_MIGRATION_DIR: ./migrations
     depends_on:
       db-dev:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
   db-dev:
     image: postgres:19
     restart: always
@@ -27,6 +32,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: ["goose", "up"]
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: ${DB_URL}
+      GOOSE_MIGRATION_DIR: ./migrations
+    depends_on:
+      db-dev:
+        condition: service_healthy
   pgadmin4:
     image: dpage/pgadmin4
     restart: always
@@ -35,5 +52,8 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 volumes:
   dev_db_data:
