@@ -12,6 +12,8 @@ go.work.sum
 # Environment files
 .env
 .env.*
+!.env.example
+!.env.dev
 
 # OS files
 .DS_Store
